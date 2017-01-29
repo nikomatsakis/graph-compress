@@ -11,6 +11,7 @@ impl DagId {
         DagId { index: n.0 as u32 }
     }
 
+    #[allow(dead_code)]
     pub fn as_in_index(&self) -> NodeIndex {
         NodeIndex(self.index as usize)
     }

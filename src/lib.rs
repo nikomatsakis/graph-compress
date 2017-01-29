@@ -8,6 +8,10 @@ use rustc_data_structures::graph::{Graph, NodeIndex};
 use rustc_data_structures::unify::UnificationTable;
 use std::fmt::Debug;
 
+#[cfg(test)]
+#[macro_use]
+mod test_macro;
+
 mod classify;
 use self::classify::Classify;
 
@@ -42,14 +46,14 @@ impl<'g, N> GraphReduce<'g, N>
     }
 
     pub fn compute(&mut self) {
-        let cross_targets = Classify::new(self).walk();
+        let _cross_targets = Classify::new(self).walk();
     }
 
-    pub fn inputs(&self, in_node: NodeIndex) -> impl Iterator<Item = NodeIndex> + 'g {
+    fn inputs(&self, in_node: NodeIndex) -> impl Iterator<Item = NodeIndex> + 'g {
         self.in_graph.predecessor_nodes(in_node)
     }
 
-    pub fn mark_cycle(&mut self, in_node1: NodeIndex, in_node2: NodeIndex) {
+    fn mark_cycle(&mut self, in_node1: NodeIndex, in_node2: NodeIndex) {
         let dag_id1 = DagId::from_in_index(in_node1);
         let dag_id2 = DagId::from_in_index(in_node2);
         self.unify.union(dag_id1, dag_id2);
@@ -58,7 +62,13 @@ impl<'g, N> GraphReduce<'g, N>
     /// Convert a dag-id into its cycle head representative. This will
     /// be a no-op unless `in_node` participates in a cycle, in which
     /// case a distinct node *may* be returned.
-    pub fn cycle_head(&mut self, in_node: DagId) -> DagId {
-        self.unify.find(in_node)
+    fn cycle_head(&mut self, in_node: NodeIndex) -> DagId {
+        let i = DagId::from_in_index(in_node);
+        self.unify.find(i)
+    }
+
+    #[cfg(test)]
+    fn in_cycle(&mut self, ni1: NodeIndex, ni2: NodeIndex) -> bool {
+        self.cycle_head(ni1) == self.cycle_head(ni2)
     }
 }

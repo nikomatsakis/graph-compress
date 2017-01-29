@@ -4,6 +4,9 @@ use rustc_data_structures::fx::FxHashSet;
 
 use super::*;
 
+#[cfg(test)]
+mod test;
+
 pub struct Classify<'a, 'g: 'a, N: 'g>
     where N: Debug
 {
@@ -13,7 +16,7 @@ pub struct Classify<'a, 'g: 'a, N: 'g>
     cross_targets: FxHashSet<NodeIndex>,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 enum Color {
     // not yet visited
     White,
@@ -49,8 +52,7 @@ impl<'a, 'g, N> Classify<'a, 'g, N>
         // convert cross-edges to the canonical dag-id and return
         let Classify { r, cross_targets, .. } = self;
         cross_targets.iter()
-                     .map(|&n| DagId::from_in_index(n))
-                     .map(|dag_id| r.cycle_head(dag_id))
+                     .map(|&n| r.cycle_head(n))
                      .collect()
     }
 
@@ -65,6 +67,11 @@ impl<'a, 'g, N> Classify<'a, 'g, N>
     }
 
     fn walk_edge(&mut self, parent: NodeIndex, child: NodeIndex) {
+        println!("walk_edge: {:?} -> {:?}, {:?}",
+                 self.r.in_graph.node_data(parent),
+                 self.r.in_graph.node_data(child),
+                 self.colors[child.0]);
+
         match self.colors[child.0] {
             Color::White => {
                 // Not yet visited this node; start walking it.
