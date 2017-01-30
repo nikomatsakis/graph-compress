@@ -115,6 +115,13 @@ pub(super) fn construct_graph<'g, N>(r: &mut GraphReduce<'g, N>, dag: Dag) -> Gr
         if let Some(&r_target) = retain_map.get(&target) {
             for &source in sources {
                 let r_source = retained_parent(source);
+
+                // NB. In the input graph, we have `a -> b` if b
+                // **reads from** a. But in the terminology of this
+                // code, we would describe that edge as `b -> a`,
+                // because we have edges *from* outputs *to* inputs.
+                // Therefore, when we create our new graph, we have to
+                // reverse the edge.
                 new_graph.add_edge(r_target, r_source, ());
             }
         } else {
