@@ -1,7 +1,7 @@
 macro_rules! graph {
     ($( $source:ident -> $target:ident, )*) => {
         {
-            use $crate::rustc_data_structures::graph::Graph;
+            use $crate::rustc_data_structures::graph::{Graph, NodeIndex};
             use $crate::rustc_data_structures::fx::FxHashMap;
 
             let mut graph = Graph::new();

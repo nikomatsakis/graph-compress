@@ -1,5 +1,6 @@
 #![feature(conservative_impl_trait)]
 #![feature(field_init_shorthand)]
+#![feature(pub_restricted)]
 #![feature(rustc_private)]
 
 extern crate rustc_data_structures;
@@ -12,11 +13,16 @@ use std::fmt::Debug;
 #[macro_use]
 mod test_macro;
 
+mod construct;
+
 mod classify;
 use self::classify::Classify;
 
 mod dag_id;
 use self::dag_id::DagId;
+
+#[cfg(test)]
+mod test;
 
 pub struct GraphReduce<'g, N> where N: 'g + Debug {
     in_graph: &'g Graph<N, ()>,
@@ -24,8 +30,22 @@ pub struct GraphReduce<'g, N> where N: 'g + Debug {
     unify: UnificationTable<DagId>,
 }
 
+struct Dag {
+    // The "parent" of a node is the node which reached it during the
+    // initial DFS. To encode the case of "no parent" (i.e., for the
+    // roots of the walk), we make `parents[i] == i` to start, which
+    // turns out be convenient.
+    parents: Vec<NodeIndex>,
+
+    // Additional edges beyond the parents.
+    cross_edges: Vec<(NodeIndex, NodeIndex)>,
+
+    // Nodes with no successors.
+    leaf_nodes: Vec<NodeIndex>,
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub struct DagNode {
+struct DagNode {
     in_index: NodeIndex
 }
 
@@ -45,8 +65,9 @@ impl<'g, N> GraphReduce<'g, N>
         GraphReduce { in_graph, unify, start_nodes }
     }
 
-    pub fn compute(&mut self) {
-        let _cross_targets = Classify::new(self).walk();
+    pub fn compute(mut self) -> Graph<&'g N, ()> {
+        let dag = Classify::new(&mut self).walk();
+        construct::construct_graph(&mut self, dag)
     }
 
     fn inputs(&self, in_node: NodeIndex) -> impl Iterator<Item = NodeIndex> + 'g {
@@ -62,9 +83,9 @@ impl<'g, N> GraphReduce<'g, N>
     /// Convert a dag-id into its cycle head representative. This will
     /// be a no-op unless `in_node` participates in a cycle, in which
     /// case a distinct node *may* be returned.
-    fn cycle_head(&mut self, in_node: NodeIndex) -> DagId {
+    fn cycle_head(&mut self, in_node: NodeIndex) -> NodeIndex {
         let i = DagId::from_in_index(in_node);
-        self.unify.find(i)
+        self.unify.find(i).as_in_index()
     }
 
     #[cfg(test)]
