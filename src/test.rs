@@ -24,6 +24,14 @@ fn reduce<D: Debug + Display>(graph: &Graph<D, ()>,
 
 #[test]
 fn test1() {
+    //  +---------------+
+    //  |               |
+    //  |      +--------|------+
+    //  |      |        v      v
+    // [A] -> [C0] -> [C1]    [D]
+    //        [  ] <- [  ] -> [E]
+    //                  ^
+    // [B] -------------+
     let (graph, nodes) = graph! {
         A -> C0,
         A -> C1,
@@ -33,6 +41,9 @@ fn test1() {
         C0 -> D,
         C1 -> E,
     };
+
+    // [A] -> [C1] -> [D]
+    // [B] -> [  ] -> [E]
     reduce(&graph, &[nodes("D"), nodes("E")], &[
         "A -> C1",
         "B -> C1",
@@ -43,6 +54,14 @@ fn test1() {
 
 #[test]
 fn test2() {
+    //  +---------------+
+    //  |               |
+    //  |      +--------|------+
+    //  |      |        v      v
+    // [A] -> [C0] -> [C1]    [D] -> [E]
+    //        [  ] <- [  ]
+    //                  ^
+    // [B] -------------+
     let (graph, nodes) = graph! {
         A -> C0,
         A -> C1,
@@ -52,6 +71,9 @@ fn test2() {
         C0 -> D,
         D -> E,
     };
+
+    // [A] -> [D] -> [E]
+    // [B] -> [ ]
     reduce(&graph, &[nodes("D"), nodes("E")], &[
         "A -> D",
         "B -> D",
